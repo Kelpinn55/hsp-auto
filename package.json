@@ -1,0 +1,12 @@
+{
+  "name": "rab-hsp-otomatis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RAB berbasis HSP DKI Jakarta (statis + fungsi Vercel Node)",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "build": "node scripts/prepare-data.js"
+  }
+}
