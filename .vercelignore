@@ -1,8 +1,18 @@
-server.py
-sync_hsp.py
-hsp_api.py
-hsp_console.js
+# Python & scraper: hanya dipakai di GitHub Actions / lokal, bukan di Vercel
+**/*.py
 requirements.txt
-data/debug
-.github
+**/requirements.txt
+pyproject.toml
+Pipfile
+Pipfile.lock
+runtime.txt
+.python-version
 __pycache__
+venv
+.venv
+
+# Lainnya yang tidak perlu di Vercel
+.github
+hsp_console.js
+README.md
+data/debug
