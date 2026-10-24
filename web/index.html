@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAB-HSP Otomatis</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#fff; --ink:#1b2430; --muted:#667085; --line:#e4e7ec;
+  --accent:#0b6e4f; --accent-ink:#fff; --warn:#b54708; --warn-bg:#fffaeb; --danger:#b42318;
+  --head:#f2f4f7; --focus:#0b6e4f33;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0f1419; --panel:#171d25; --ink:#e7ebf0; --muted:#98a2b3; --line:#2a323d;
+    --accent:#3ab98a; --accent-ink:#06261b; --warn:#f5b455; --warn-bg:#2a2112; --danger:#f97066;
+    --head:#1d252f; --focus:#3ab98a44; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header h1{font-size:17px;margin:0;font-weight:650}
+header .meta{color:var(--muted);font-size:12.5px;flex:1;min-width:220px}
+main{max-width:1280px;margin:0 auto;padding:16px 20px 60px}
+button,.btn{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;border-radius:7px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:4px 8px}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.55;cursor:default}
+input,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 9px}
+input:focus,select:focus,button:focus-visible{outline:3px solid var(--focus);border-color:var(--accent)}
+nav.tabs{display:flex;gap:4px;margin:14px 0 12px;border-bottom:1px solid var(--line)}
+nav.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:9px 14px;color:var(--muted)}
+nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.banner{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn);border-radius:8px;padding:9px 12px;margin-bottom:12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toolbar .grow{flex:1}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--head);font-weight:600;font-size:12.5px;position:sticky;top:0;white-space:nowrap}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.sub td{background:var(--head);font-weight:600}
+tr.miss td{color:var(--warn)}
+td input.vol{width:96px;text-align:right}
+td input.hrg{width:130px;text-align:right}
+.totals{margin:14px 0 0 auto;max-width:520px}
+.totals div{display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px dashed var(--line)}
+.totals .grand{font-weight:700;font-size:16px;border-bottom:0;padding-top:10px}
+.terbilang{margin-top:6px;color:var(--muted);font-style:italic;text-align:right}
+.empty{padding:34px;text-align:center;color:var(--muted)}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;background:var(--head);font-size:12px;color:var(--muted)}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:0;width:min(900px,94vw);max-height:88vh}
+dialog::backdrop{background:#0008}
+dialog .dh{display:flex;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+dialog .db{padding:0 0 6px;overflow:auto;max-height:68vh}
+dialog .df{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end}
+.log{white-space:pre-wrap;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--head);padding:10px;border-radius:8px;max-height:220px;overflow:auto}
+.hint{color:var(--muted);font-size:12.5px}
+@media print{header,nav.tabs,.toolbar,button{display:none!important} main{padding:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>RAB-HSP Otomatis</h1>
+  <div class="meta" id="meta">Memuat data…</div>
+  <button id="btnSync" class="primary" title="Unduh HSP, koefisien, dan harga acuan terbaru dari Bangun Jakarta">Sinkronkan data terbaru</button>
+  <label class="btn" for="fileImport" title="Muat berkas hsp.json hasil sync_hsp.py">Impor hsp.json</label>
+  <input id="fileImport" type="file" accept=".json,application/json" hidden>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="rab" aria-selected="true">RAB</button>
+    <button role="tab" data-tab="katalog" aria-selected="false">Katalog HSP</button>
+    <button role="tab" data-tab="rekap" aria-selected="false">Rekap Upah &amp; Bahan</button>
+    <button role="tab" data-tab="acuan" aria-selected="false">Harga Acuan</button>
+  </nav>
+
+  <!-- RAB -->
+  <section id="tab-rab">
+    <div class="toolbar">
+      <input id="rabNama" placeholder="Nama pekerjaan / proyek" style="min-width:260px">
+      <label>PPN <input id="rabPpn" type="number" min="0" max="100" step="0.5" value="11" style="width:70px"> %</label>
+      <span class="grow"></span>
+      <button id="btnExport" class="primary">Ekspor Excel</button>
+      <button id="btnCsv">Ekspor CSV</button>
+      <button id="btnPrint">Cetak</button>
+      <button id="btnClear" class="danger">Kosongkan RAB</button>
+    </div>
+    <div class="card">
+      <table id="rabTable">
+        <thead><tr><th>No</th><th>Uraian Pekerjaan</th><th>Satuan</th><th class="num">Volume</th><th class="num">Harga Satuan (Rp)</th><th class="num">Jumlah (Rp)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="totals" id="totals"></div>
+    <div class="terbilang" id="terbilang"></div>
+    <p class="hint">Harga satuan mengikuti data HSP terbaru. Ubah angkanya untuk memakai harga manual; tombol ↺ mengembalikan ke harga HSP. Tambahkan pekerjaan dari tab <b>Katalog HSP</b>.</p>
+  </section>
+
+  <!-- KATALOG -->
+  <section id="tab-katalog" hidden>
+    <div class="toolbar">
+      <input id="qKat" type="search" placeholder="Cari uraian pekerjaan…" style="min-width:300px">
+      <select id="fKat"><option value="">Semua kategori</option></select>
+      <select id="fSat"><option value="">Semua satuan</option></select>
+      <span class="pill" id="katCount"></span>
+    </div>
+    <div class="card">
+      <table id="katTable">
+        <thead><tr><th>No</th><th>Uraian Pekerjaan</th><th>Satuan</th><th>Kategori</th><th class="num">Harga (Rp)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="margin-top:10px"><button id="katMore" hidden>Tampilkan lebih banyak</button></div>
+  </section>
+
+  <!-- REKAP -->
+  <section id="tab-rekap" hidden>
+    <p class="hint">Kebutuhan tenaga kerja, bahan, dan peralatan = volume pekerjaan × koefisien analisa HSP, dijumlahkan per kode.</p>
+    <div class="card"><table id="rekapTable">
+      <thead><tr><th>Kelompok</th><th>Kode</th><th>Uraian</th><th>Satuan</th><th class="num">Kebutuhan</th><th class="num">Harga Satuan (Rp)</th><th class="num">Jumlah (Rp)</th></tr></thead>
+      <tbody></tbody></table></div>
+  </section>
+
+  <!-- ACUAN -->
+  <section id="tab-acuan" hidden>
+    <div class="toolbar">
+      <input id="qAcu" type="search" placeholder="Cari upah / bahan / alat…" style="min-width:300px">
+      <select id="fAcu"><option value="">Semua kelompok</option><option value="upah">Upah</option><option value="bahan">Bahan</option><option value="alat">Alat</option></select>
+      <span class="pill" id="acuCount"></span>
+    </div>
+    <div class="card"><table id="acuTable">
+      <thead><tr><th>Kelompok</th><th>Kode</th><th>Uraian</th><th>Satuan</th><th class="num">Harga (Rp)</th></tr></thead>
+      <tbody></tbody></table></div>
+  </section>
+</main>
+
+<dialog id="dlgDetail">
+  <div class="dh"><div><b id="dTitle"></b><div class="hint" id="dSub"></div></div><button class="ghost" id="dClose" aria-label="Tutup">✕</button></div>
+  <div class="db"><table id="dTable"><thead><tr><th>No</th><th>Uraian</th><th>Kode</th><th>Satuan</th><th class="num">Koefisien</th><th class="num">Harga Satuan</th><th class="num">Jumlah Harga</th></tr></thead><tbody></tbody></table></div>
+  <div class="df"><button id="dAdd" class="primary">Tambah ke RAB</button></div>
+</dialog>
+
+<dialog id="dlgSync">
+  <div class="dh"><b>Sinkronisasi data HSP</b><button class="ghost" id="sClose" aria-label="Tutup">✕</button></div>
+  <div style="padding:14px 18px">
+    <p id="sInfo" class="hint"></p>
+    <div class="log" id="sLog"></div>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const nf = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 });
+const nf4 = new Intl.NumberFormat("id-ID", { maximumFractionDigits: 4 });
+const rp = v => (v == null || isNaN(v)) ? "-" : nf.format(v);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const keyOf = it => `${it.uraian}|${it.satuan}|${it.kategori}`;
+const GRUP = { upah: "Tenaga Kerja", bahan: "Bahan", alat: "Peralatan" };
+const LS = "rab-hsp-v1";
+
+let DATA = { meta: {}, items: [], harga_acuan: [] };
+let BY_KEY = new Map();
+let IS_SAMPLE = false;
+let RAB = { nama: "", ppn: 11, lines: [] };
+let katLimit = 150;
+let detailItem = null;
+
+/* ---------- data ---------- */
+function setData(d, sample = false) {
+  DATA = { meta: d.meta || {}, items: d.items || [], harga_acuan: d.harga_acuan || [] };
+  IS_SAMPLE = sample;
+  BY_KEY = new Map(DATA.items.map(i => [keyOf(i), i]));
+  fillFilters();
+  renderMeta(); renderAll();
+}
+async function loadData() {
+  for (const [url, sample] of [["data/hsp.json", false], ["data/hsp.sample.json", true]]) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (r.ok) { setData(await r.json(), sample); return; }
+    } catch (e) { /* coba berikutnya */ }
+  }
+  renderMeta();
+}
+function renderMeta() {
+  const m = DATA.meta || {};
+  const el = $("#meta");
+  if (!DATA.items.length) { el.textContent = "Belum ada data. Klik “Sinkronkan data terbaru” atau impor hsp.json."; }
+  else {
+    const t = m.diambil_pada ? new Date(m.diambil_pada).toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" }) : "-";
+    el.textContent = `${DATA.items.length} HSP · ${DATA.harga_acuan.length} harga acuan · diambil ${t}`;
+  }
+  $("#banner").innerHTML = IS_SAMPLE
+    ? `<div class="banner"><b>Data contoh.</b> Angka di bawah hanya untuk mencoba tampilan, bukan harga resmi. Jalankan sinkronisasi untuk memakai data asli Bangun Jakarta.</div>` : "";
+}
+function fillFilters() {
+  const kats = [...new Set(DATA.items.map(i => i.kategori).filter(Boolean))].sort();
+  const sats = [...new Set(DATA.items.map(i => i.satuan).filter(Boolean))].sort();
+  $("#fKat").innerHTML = `<option value="">Semua kategori</option>` + kats.map(k => `<option>${esc(k)}</option>`).join("");
+  $("#fSat").innerHTML = `<option value="">Semua satuan</option>` + sats.map(k => `<option>${esc(k)}</option>`).join("");
+}
+
+/* ---------- RAB state ---------- */
+function saveRab() { try { localStorage.setItem(LS, JSON.stringify(RAB)); } catch (e) {} }
+function loadRab() {
+  try { const s = JSON.parse(localStorage.getItem(LS) || "null"); if (s && Array.isArray(s.lines)) RAB = s; } catch (e) {}
+  $("#rabNama").value = RAB.nama || ""; $("#rabPpn").value = RAB.ppn ?? 11;
+}
+function addLine(item) {
+  const k = keyOf(item);
+  const ex = RAB.lines.find(l => l.key === k);
+  if (ex) { ex.volume = (+ex.volume || 0) + 1; }
+  else RAB.lines.push({ key: k, uraian: item.uraian, satuan: item.satuan, kategori: item.kategori, volume: 1, override: null });
+  saveRab(); renderRab(); renderRekap();
+}
+const lineItem = l => BY_KEY.get(l.key);
+const linePrice = l => l.override != null ? l.override : (lineItem(l)?.harga ?? 0);
+
+function terbilang(n) {
+  n = Math.floor(n);
+  const s = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas"];
+  const t = (x) => {
+    if (x < 12) return s[x];
+    if (x < 20) return t(x - 10) + " belas";
+    if (x < 100) return t(Math.floor(x / 10)) + " puluh" + (x % 10 ? " " + t(x % 10) : "");
+    if (x < 200) return "seratus" + (x > 100 ? " " + t(x - 100) : "");
+    if (x < 1000) return t(Math.floor(x / 100)) + " ratus" + (x % 100 ? " " + t(x % 100) : "");
+    if (x < 2000) return "seribu" + (x > 1000 ? " " + t(x - 1000) : "");
+    if (x < 1e6) return t(Math.floor(x / 1e3)) + " ribu" + (x % 1e3 ? " " + t(x % 1e3) : "");
+    if (x < 1e9) return t(Math.floor(x / 1e6)) + " juta" + (x % 1e6 ? " " + t(x % 1e6) : "");
+    if (x < 1e12) return t(Math.floor(x / 1e9)) + " miliar" + (x % 1e9 ? " " + t(x % 1e9) : "");
+    return t(Math.floor(x / 1e12)) + " triliun" + (x % 1e12 ? " " + t(x % 1e12) : "");
+  };
+  return n === 0 ? "nol" : t(n);
+}
+
+function totals() {
+  const sub = RAB.lines.reduce((a, l) => a + (+l.volume || 0) * linePrice(l), 0);
+  const ppn = sub * ((+RAB.ppn || 0) / 100);
+  const total = sub + ppn;
+  const bulat = Math.round(total / 1000) * 1000;
+  return { sub, ppn, total, bulat };
+}
+
+/* ---------- render ---------- */
+function renderRab() {
+  const tb = $("#rabTable tbody");
+  if (!RAB.lines.length) {
+    tb.innerHTML = `<tr><td colspan="7" class="empty">RAB masih kosong. Buka tab <b>Katalog HSP</b> lalu tambahkan pekerjaan.</td></tr>`;
+  } else {
+    tb.innerHTML = RAB.lines.map((l, i) => {
+      const it = lineItem(l), miss = !it, price = linePrice(l);
+      return `<tr class="${miss ? "miss" : ""}" data-i="${i}">
+        <td>${i + 1}</td>
+        <td>${esc(l.uraian)}${miss ? `<div class="hint">Tidak ditemukan di data terbaru — harga manual dipakai.</div>` : ""}</td>
+        <td>${esc(l.satuan)}</td>
+        <td class="num"><input class="vol" type="number" min="0" step="any" value="${l.volume}" aria-label="Volume"></td>
+        <td class="num"><input class="hrg" type="number" min="0" step="any" value="${price}" aria-label="Harga satuan">
+          ${l.override != null ? `<button class="ghost reset" title="Kembalikan ke harga HSP">↺</button>` : ""}</td>
+        <td class="num amt">${rp((+l.volume || 0) * price)}</td>
+        <td><button class="ghost danger del" title="Hapus baris" aria-label="Hapus baris">✕</button></td></tr>`;
+    }).join("");
+  }
+  renderTotals();
+}
+function renderTotals() {
+  const t = totals();
+  $("#totals").innerHTML = `
+    <div><span>Jumlah</span><span>Rp ${rp(t.sub)}</span></div>
+    <div><span>PPN ${nf.format(+RAB.ppn || 0)}%</span><span>Rp ${rp(t.ppn)}</span></div>
+    <div class="grand"><span>Total</span><span>Rp ${rp(t.total)}</span></div>
+    <div><span>Dibulatkan</span><span>Rp ${rp(t.bulat)}</span></div>`;
+  $("#terbilang").textContent = RAB.lines.length ? `Terbilang: ${terbilang(t.bulat)} rupiah` : "";
+}
+function updateRowAmounts() {
+  $$("#rabTable tbody tr[data-i]").forEach(tr => {
+    const l = RAB.lines[+tr.dataset.i]; if (!l) return;
+    $(".amt", tr).textContent = rp((+l.volume || 0) * linePrice(l));
+  });
+  renderTotals();
+}
+
+function filteredKatalog() {
+  const q = $("#qKat").value.trim().toLowerCase(), k = $("#fKat").value, s = $("#fSat").value;
+  return DATA.items.filter(i => (!k || i.kategori === k) && (!s || i.satuan === s) && (!q || i.uraian.toLowerCase().includes(q)));
+}
+function renderKatalog() {
+  const all = filteredKatalog(), rows = all.slice(0, katLimit);
+  $("#katCount").textContent = `${all.length} pekerjaan`;
+  $("#katTable tbody").innerHTML = rows.length ? rows.map(i => `
+    <tr data-k="${esc(keyOf(i))}"><td>${esc(i.no)}</td><td>${esc(i.uraian)}</td><td>${esc(i.satuan)}</td><td>${esc(i.kategori)}</td>
+    <td class="num">${rp(i.harga)}</td>
+    <td style="white-space:nowrap"><button class="det">Detail</button> <button class="add primary">+ RAB</button></td></tr>`).join("")
+    : `<tr><td colspan="6" class="empty">${DATA.items.length ? "Tidak ada hasil." : "Belum ada data HSP."}</td></tr>`;
+  $("#katMore").hidden = all.length <= katLimit;
+}
+
+function renderRekap() {
+  const map = new Map();
+  for (const l of RAB.lines) {
+    const it = lineItem(l); if (!it) continue;
+    for (const d of it.detail || []) {
+      if (d.tipe !== "komponen") continue;
+      const k = (d.kode || "") + "|" + d.uraian;
+      const cur = map.get(k) || { grup: d.grup, kode: d.kode, uraian: d.uraian, satuan: d.satuan, qty: 0, harga: d.harga_satuan };
+      cur.qty += (+l.volume || 0) * (d.koefisien || 0);
+      map.set(k, cur);
+    }
+  }
+  const order = { upah: 0, bahan: 1, alat: 2 };
+  const rows = [...map.values()].sort((a, b) => (order[a.grup] ?? 9) - (order[b.grup] ?? 9) || (a.kode || "").localeCompare(b.kode || "") || a.uraian.localeCompare(b.uraian));
+  const tb = $("#rekapTable tbody");
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="7" class="empty">Belum ada pekerjaan di RAB (atau data detail koefisien belum tersedia).</td></tr>`; return; }
+  let html = "", cur = null, sub = 0;
+  const flush = () => { if (cur !== null) html += `<tr class="sub"><td colspan="6">Subtotal ${esc(GRUP[cur] || cur || "Lainnya")}</td><td class="num">${rp(sub)}</td></tr>`; };
+  for (const r of rows) {
+    if (r.grup !== cur) { flush(); cur = r.grup; sub = 0; }
+    const jml = r.qty * (r.harga || 0); sub += jml;
+    html += `<tr><td>${esc(GRUP[r.grup] || "Lainnya")}</td><td>${esc(r.kode)}</td><td>${esc(r.uraian)}</td><td>${esc(r.satuan)}</td>
+      <td class="num">${nf4.format(r.qty)}</td><td class="num">${rp(r.harga)}</td><td class="num">${rp(jml)}</td></tr>`;
+  }
+  flush();
+  tb.innerHTML = html;
+}
+
+function renderAcuan() {
+  const q = $("#qAcu").value.trim().toLowerCase(), g = $("#fAcu").value;
+  const rows = DATA.harga_acuan.filter(r => (!g || r.grup === g) && (!q || (r.uraian + " " + (r.kode || "")).toLowerCase().includes(q)));
+  $("#acuCount").textContent = `${rows.length} item`;
+  $("#acuTable tbody").innerHTML = rows.length ? rows.slice(0, 500).map(r => `
+    <tr><td>${esc(GRUP[r.grup] || "-")}</td><td>${esc(r.kode)}</td><td>${esc(r.uraian)}</td><td>${esc(r.satuan)}</td><td class="num">${rp(r.harga)}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="empty">Tidak ada data.</td></tr>`;
+}
+function renderAll() { renderRab(); renderKatalog(); renderRekap(); renderAcuan(); }
+
+/* ---------- detail dialog ---------- */
+function openDetail(item) {
+  detailItem = item;
+  $("#dTitle").textContent = item.uraian;
+  $("#dSub").textContent = `${item.kategori || "-"} · per ${item.satuan} · Rp ${rp(item.harga)}`;
+  const rows = item.detail || [];
+  $("#dTable tbody").innerHTML = rows.length ? rows.map(d => d.tipe === "komponen"
+    ? `<tr><td>${esc(d.no)}</td><td>${esc(d.uraian)}</td><td>${esc(d.kode)}</td><td>${esc(d.satuan)}</td><td class="num">${nf4.format(d.koefisien)}</td><td class="num">${rp(d.harga_satuan)}</td><td class="num">${rp(d.jumlah_harga)}</td></tr>`
+    : `<tr class="sub"><td>${esc(d.no)}</td><td colspan="5">${esc(d.uraian)}</td><td class="num">${d.jumlah_harga != null ? rp(d.jumlah_harga) : ""}</td></tr>`).join("")
+    : `<tr><td colspan="7" class="empty">Detail koefisien belum tersedia untuk pekerjaan ini.</td></tr>`;
+  $("#dlgDetail").showModal();
+}
+
+/* ---------- export ---------- */
+function buildSheets() {
+  const t = totals();
+  const rab = [["RENCANA ANGGARAN BIAYA"], [RAB.nama || ""], [`Sumber harga: HSP Bangun Jakarta (${DATA.meta.diambil_pada || "-"})`], [],
+    ["No", "Uraian Pekerjaan", "Satuan", "Volume", "Harga Satuan (Rp)", "Jumlah (Rp)"]];
+  RAB.lines.forEach((l, i) => rab.push([i + 1, l.uraian, l.satuan, +l.volume || 0, linePrice(l), (+l.volume || 0) * linePrice(l)]));
+  rab.push([], ["", "Jumlah", "", "", "", t.sub], ["", `PPN ${RAB.ppn}%`, "", "", "", t.ppn], ["", "Total", "", "", "", t.total],
+    ["", "Dibulatkan", "", "", "", t.bulat], ["", `Terbilang: ${terbilang(t.bulat)} rupiah`]);
+
+  const an = [["No", "Pekerjaan / Uraian", "Kode", "Satuan", "Koefisien", "Harga Satuan (Rp)", "Jumlah Harga (Rp)"]];
+  RAB.lines.forEach((l, i) => {
+    const it = lineItem(l);
+    an.push([`${i + 1}`, `${l.uraian} (per ${l.satuan})`, "", "", "", "", it?.harga ?? ""]);
+    (it?.detail || []).forEach(d => an.push(d.tipe === "komponen"
+      ? [d.no, d.uraian, d.kode, d.satuan, d.koefisien, d.harga_satuan, d.jumlah_harga]
+      : [d.no, d.uraian, "", "", "", "", d.jumlah_harga ?? ""]));
+    an.push([]);
+  });
+
+  const map = new Map();
+  for (const l of RAB.lines) for (const d of (lineItem(l)?.detail || [])) {
+    if (d.tipe !== "komponen") continue;
+    const k = (d.kode || "") + "|" + d.uraian;
+    const c = map.get(k) || { grup: d.grup, kode: d.kode, uraian: d.uraian, satuan: d.satuan, qty: 0, harga: d.harga_satuan };
+    c.qty += (+l.volume || 0) * (d.koefisien || 0); map.set(k, c);
+  }
+  const rek = [["Kelompok", "Kode", "Uraian", "Satuan", "Kebutuhan", "Harga Satuan (Rp)", "Jumlah (Rp)"]];
+  [...map.values()].sort((a, b) => (a.grup || "z").localeCompare(b.grup || "z")).forEach(r =>
+    rek.push([GRUP[r.grup] || "Lainnya", r.kode, r.uraian, r.satuan, r.qty, r.harga, r.qty * (r.harga || 0)]));
+
+  const acu = [["Kelompok", "Kode", "Uraian", "Satuan", "Harga (Rp)"]];
+  DATA.harga_acuan.forEach(r => acu.push([GRUP[r.grup] || "", r.kode, r.uraian, r.satuan, r.harga]));
+  return { RAB: rab, "Analisa HSP": an, "Rekap Sumber Daya": rek, "Harga Acuan": acu };
+}
+function download(name, blob) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+function exportXlsx() {
+  if (!RAB.lines.length) return alert("RAB masih kosong.");
+  if (!window.XLSX) return alert("Pustaka Excel gagal dimuat (perlu internet untuk cdnjs). Gunakan Ekspor CSV.");
+  const wb = XLSX.utils.book_new();
+  for (const [name, aoa] of Object.entries(buildSheets())) {
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!cols"] = name === "RAB" ? [{ wch: 5 }, { wch: 60 }, { wch: 9 }, { wch: 10 }, { wch: 18 }, { wch: 20 }] : [{ wch: 14 }, { wch: 50 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  }
+  XLSX.writeFile(wb, `RAB_${(RAB.nama || "proyek").replace(/[^\w\-]+/g, "_")}_${stamp()}.xlsx`);
+}
+function exportCsv() {
+  if (!RAB.lines.length) return alert("RAB masih kosong.");
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = "﻿" + buildSheets().RAB.map(r => r.map(q).join(";")).join("\r\n");
+  download(`RAB_${stamp()}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
+}
+
+/* ---------- sinkronisasi ---------- */
+let pollTimer = null;
+async function startSync() {
+  const dlg = $("#dlgSync"); $("#sLog").textContent = ""; $("#sInfo").textContent = "Menghubungi server lokal…"; dlg.showModal();
+  try {
+    const r = await fetch("/api/sync", { method: "POST" });
+    if (r.status === 404 || r.status === 501) throw new Error("no-api:" + r.status);
+    if (!r.ok && r.status !== 409) throw new Error("gagal");
+  } catch (e) {
+    const lokal = ["localhost", "127.0.0.1", ""].includes(location.hostname);
+    if (lokal) {
+      $("#sInfo").textContent = "Server lokal tidak terdeteksi.";
+      $("#sLog").textContent = "Jalankan web ini lewat server lokal:\n\n  python server.py\n\nlalu buka http://localhost:8000\n\n" +
+        "Atau jalankan manual:\n\n  python sync_hsp.py\n\nlalu klik “Impor hsp.json” dan pilih data/hsp.json.";
+    } else {
+      $("#sInfo").textContent = "Tombol sinkron belum diaktifkan di deployment ini.";
+      $("#sLog").textContent = "Data diperbarui otomatis tiap minggu lewat GitHub Actions (workflow “Sinkron data HSP”).\n\n" +
+        "Untuk mengaktifkan tombol ini, atur GH_SYNC_TOKEN dan GH_REPO di Vercel (lihat README),\n" +
+        "atau jalankan workflow secara manual dari tab Actions di GitHub.";
+    }
+    return;
+  }
+  $("#btnSync").disabled = true;
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const s = await (await fetch("/api/status", { cache: "no-store" })).json();
+      $("#sLog").textContent = (s.log || []).join("\n"); $("#sLog").scrollTop = 1e9;
+      $("#sInfo").textContent = s.running ? "Sedang mengambil data dari Bangun Jakarta… (bisa beberapa menit)" :
+        (s.exit_code === 0 ? "Selesai. Data diperbarui." : "Selesai dengan kesalahan (kode " + s.exit_code + "). Lihat log.");
+      if (!s.running) { clearInterval(pollTimer); $("#btnSync").disabled = false; if (s.exit_code === 0) await loadData(); }
+    } catch (e) { clearInterval(pollTimer); $("#btnSync").disabled = false; }
+  }, 1500);
+}
+
+/* ---------- events ---------- */
+$$("nav.tabs button").forEach(b => b.addEventListener("click", () => {
+  $$("nav.tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  for (const t of ["rab", "katalog", "rekap", "acuan"]) $(`#tab-${t}`).hidden = (t !== b.dataset.tab);
+  if (b.dataset.tab === "rekap") renderRekap();
+}));
+$("#qKat").addEventListener("input", () => { katLimit = 150; renderKatalog(); });
+$("#fKat").addEventListener("change", () => { katLimit = 150; renderKatalog(); });
+$("#fSat").addEventListener("change", () => { katLimit = 150; renderKatalog(); });
+$("#katMore").addEventListener("click", () => { katLimit += 300; renderKatalog(); });
+$("#qAcu").addEventListener("input", renderAcuan);
+$("#fAcu").addEventListener("change", renderAcuan);
+
+$("#katTable").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-k]"); if (!tr) return;
+  const it = BY_KEY.get(tr.dataset.k); if (!it) return;
+  if (e.target.closest(".add")) { addLine(it); const b = e.target.closest(".add"); b.textContent = "✓"; setTimeout(() => b.textContent = "+ RAB", 700); }
+  else if (e.target.closest(".det")) openDetail(it);
+});
+$("#dAdd").addEventListener("click", () => { if (detailItem) addLine(detailItem); $("#dlgDetail").close(); });
+$("#dClose").addEventListener("click", () => $("#dlgDetail").close());
+$("#sClose").addEventListener("click", () => $("#dlgSync").close());
+
+$("#rabTable").addEventListener("input", e => {
+  const tr = e.target.closest("tr[data-i]"); if (!tr) return;
+  const l = RAB.lines[+tr.dataset.i];
+  if (e.target.classList.contains("vol")) l.volume = e.target.value === "" ? 0 : +e.target.value;
+  if (e.target.classList.contains("hrg")) l.override = e.target.value === "" ? 0 : +e.target.value;
+  saveRab(); updateRowAmounts();
+});
+$("#rabTable").addEventListener("change", e => { if (e.target.classList.contains("hrg")) { renderRab(); renderRekap(); } else if (e.target.classList.contains("vol")) renderRekap(); });
+$("#rabTable").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-i]"); if (!tr) return; const i = +tr.dataset.i;
+  if (e.target.closest(".del")) { RAB.lines.splice(i, 1); }
+  else if (e.target.closest(".reset")) { RAB.lines[i].override = null; }
+  else return;
+  saveRab(); renderRab(); renderRekap();
+});
+$("#rabNama").addEventListener("input", e => { RAB.nama = e.target.value; saveRab(); });
+$("#rabPpn").addEventListener("input", e => { RAB.ppn = e.target.value === "" ? 0 : +e.target.value; saveRab(); renderTotals(); });
+$("#btnClear").addEventListener("click", () => { if (RAB.lines.length && confirm("Kosongkan seluruh baris RAB?")) { RAB.lines = []; saveRab(); renderRab(); renderRekap(); } });
+$("#btnExport").addEventListener("click", exportXlsx);
+$("#btnCsv").addEventListener("click", exportCsv);
+$("#btnPrint").addEventListener("click", () => window.print());
+$("#btnSync").addEventListener("click", startSync);
+$("#fileImport").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.items)) throw new Error("format");
+    setData(d, false);
+  } catch (err) { alert("Berkas tidak valid. Gunakan data/hsp.json hasil sync_hsp.py."); }
+  e.target.value = "";
+});
+
+loadRab();
+renderRab();
+loadData();
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+name: Sinkron data HSP
+
+on:
+  schedule:
+    - cron: "0 21 * * 0"      # tiap Minggu 21:00 UTC = Senin 04:00 WIB
+  workflow_dispatch:           # bisa dijalankan manual / lewat tombol di web (api/sync)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-hsp
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Pasang dependensi
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Ambil data HSP dari Bangun Jakarta
+        run: python -u sync_hsp.py --max-minutes 100 --debug
+
+      - name: Unggah berkas debug (jika gagal)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hsp-debug
+          path: data/debug/
+          if-no-files-found: ignore
+
+      - name: Commit hasil ke repo
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git add data/hsp.json
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan data."
+          else
+            git commit -m "chore: sinkron data HSP $(date -u +%F)"
+            git push
+          fi
+
+      - name: Picu deploy Vercel (opsional)
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$HOOK" ]; then curl -fsS -X POST "$HOOK" >/dev/null && echo "Deploy hook dipanggil"; fi

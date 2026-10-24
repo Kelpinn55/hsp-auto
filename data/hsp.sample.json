@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "sumber": "DATA CONTOH - bukan data resmi",
+    "diambil_pada": "2026-10-24T12:00:00+07:00",
+    "jumlah_hsp": 3,
+    "jumlah_hsp_dengan_detail": 3
+  },
+  "items": [
+    {
+      "no": "1", "uraian": "[CONTOH] Pekerjaan Galian Tanah Biasa", "satuan": "m3", "kategori": "Pekerjaan Tanah", "harga": 100000,
+      "detail": [
+        {"tipe": "baris", "grup": "upah", "no": "A", "uraian": "Tenaga Kerja", "jumlah_harga": null},
+        {"tipe": "komponen", "grup": "upah", "no": "1", "uraian": "Pekerja", "kode": "L.01", "satuan": "OH", "koefisien": 0.75, "harga_satuan": 100000, "jumlah_harga": 75000},
+        {"tipe": "komponen", "grup": "upah", "no": "2", "uraian": "Mandor", "kode": "L.04", "satuan": "OH", "koefisien": 0.025, "harga_satuan": 140000, "jumlah_harga": 3500},
+        {"tipe": "baris", "grup": "upah", "no": "", "uraian": "Jumlah Harga Tenaga Kerja", "jumlah_harga": 78500},
+        {"tipe": "baris", "grup": "upah", "no": "", "uraian": "Overhead & Profit", "jumlah_harga": 21500}
+      ]
+    },
+    {
+      "no": "2", "uraian": "[CONTOH] Pasangan Bata Merah 1:4", "satuan": "m2", "kategori": "Pekerjaan Dinding", "harga": 250000,
+      "detail": [
+        {"tipe": "baris", "grup": "upah", "no": "A", "uraian": "Tenaga Kerja", "jumlah_harga": null},
+        {"tipe": "komponen", "grup": "upah", "no": "1", "uraian": "Pekerja", "kode": "L.01", "satuan": "OH", "koefisien": 0.3, "harga_satuan": 100000, "jumlah_harga": 30000},
+        {"tipe": "komponen", "grup": "upah", "no": "2", "uraian": "Tukang Batu", "kode": "L.02", "satuan": "OH", "koefisien": 0.1, "harga_satuan": 130000, "jumlah_harga": 13000},
+        {"tipe": "baris", "grup": "bahan", "no": "B", "uraian": "Bahan", "jumlah_harga": null},
+        {"tipe": "komponen", "grup": "bahan", "no": "1", "uraian": "Bata Merah", "kode": "M.10", "satuan": "buah", "koefisien": 70, "harga_satuan": 1000, "jumlah_harga": 70000},
+        {"tipe": "komponen", "grup": "bahan", "no": "2", "uraian": "Semen Portland", "kode": "M.20", "satuan": "kg", "koefisien": 11.5, "harga_satuan": 1500, "jumlah_harga": 17250},
+        {"tipe": "komponen", "grup": "bahan", "no": "3", "uraian": "Pasir Pasang", "kode": "M.30", "satuan": "m3", "koefisien": 0.043, "harga_satuan": 250000, "jumlah_harga": 10750}
+      ]
+    },
+    {
+      "no": "3", "uraian": "[CONTOH] Pengecatan Dinding Dalam", "satuan": "m2", "kategori": "Pekerjaan Finishing", "harga": 60000,
+      "detail": [
+        {"tipe": "komponen", "grup": "upah", "no": "1", "uraian": "Pekerja", "kode": "L.01", "satuan": "OH", "koefisien": 0.2, "harga_satuan": 100000, "jumlah_harga": 20000},
+        {"tipe": "komponen", "grup": "bahan", "no": "2", "uraian": "Cat Tembok", "kode": "M.40", "satuan": "kg", "koefisien": 0.26, "harga_satuan": 60000, "jumlah_harga": 15600}
+      ]
+    }
+  ],
+  "harga_acuan": [
+    {"kode": "L.01", "uraian": "Pekerja", "satuan": "OH", "harga": 100000, "grup": "upah"},
+    {"kode": "L.02", "uraian": "Tukang Batu", "satuan": "OH", "harga": 130000, "grup": "upah"},
+    {"kode": "L.04", "uraian": "Mandor", "satuan": "OH", "harga": 140000, "grup": "upah"},
+    {"kode": "M.10", "uraian": "Bata Merah", "satuan": "buah", "harga": 1000, "grup": "bahan"},
+    {"kode": "M.20", "uraian": "Semen Portland", "satuan": "kg", "harga": 1500, "grup": "bahan"},
+    {"kode": "M.30", "uraian": "Pasir Pasang", "satuan": "m3", "harga": 250000, "grup": "bahan"},
+    {"kode": "M.40", "uraian": "Cat Tembok", "satuan": "kg", "harga": 60000, "grup": "bahan"}
+  ]
+}

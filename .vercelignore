@@ -1,0 +1,8 @@
+server.py
+sync_hsp.py
+hsp_api.py
+hsp_console.js
+requirements.txt
+data/debug
+.github
+__pycache__
