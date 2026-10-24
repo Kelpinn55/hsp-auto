@@ -1,7 +1,13 @@
 {
-  "buildCommand": "mkdir -p web/data && cp data/*.json web/data/",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo \"tanpa dependensi\"",
+  "buildCommand": "node scripts/prepare-data.js",
   "outputDirectory": "web",
   "headers": [
-    { "source": "/data/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] }
+    {
+      "source": "/data/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
   ]
 }
